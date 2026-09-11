@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101418">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Command Center">
+<meta name="mobile-web-app-capable" content="yes">
+
+<title>Daily Command Center</title>
+<style>
+:root {
+  --bg:#0e1116; --panel:#151a21; --panel2:#1b222b; --line:#2b3440;
+  --text:#edf2f7; --muted:#9aa7b4; --accent:#7cb8ff; --accent2:#9ad6b3;
+  --warn:#ffd27a; --danger:#ff8f8f; --ok:#8bd6a5; --shadow:0 10px 30px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1500px;margin:auto;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;background:rgba(14,17,22,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6e80ff);display:grid;place-items:center;font-weight:900;color:#081019}
+.brand h1{font-size:18px;margin:0} .brand small{color:var(--muted)}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px 12px;border-radius:10px}
+.btn:hover{border-color:#526171} .btn.primary{background:var(--accent);border-color:var(--accent);color:#07101a;font-weight:700}
+.btn.danger{color:#ffd1d1} .btn.small{padding:6px 9px;font-size:13px}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0}
+.sidebar{padding:16px;border-right:1px solid var(--line);min-height:calc(100vh - 65px);position:sticky;top:65px;align-self:start}
+.navbtn{display:flex;width:100%;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border:0;border-radius:10px;background:transparent;color:var(--muted);text-align:left}
+.navbtn.active{background:var(--panel2);color:var(--text)} .navbtn:hover{background:var(--panel)}
+main{padding:20px;min-width:0}
+.view{display:none} .view.active{display:block}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;flex-wrap:wrap}
+.section-head h2{margin:0;font-size:22px} .subtle{color:var(--muted);font-size:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:var(--shadow)}
+.metric .label{font-size:13px;color:var(--muted)} .metric .value{font-size:27px;font-weight:800;margin-top:4px} .metric .detail{font-size:12px;color:var(--muted);margin-top:3px}
+.cols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:16px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.item .time{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums} .item .title{font-weight:700} .meta{font-size:12px;color:var(--muted);margin-top:3px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.pill.exam{color:#ffe1a3;border-color:#6a5632} .pill.done{color:#bceacc;border-color:#365845}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.habit{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.habit input{width:20px;height:20px} .habit .name{font-weight:700} .habit .goal{font-size:12px;color:var(--muted)}
+.streak{font-size:12px;color:var(--warn)}
+.alert{border-left:4px solid var(--warn);background:#211c12;padding:12px 14px;border-radius:10px;margin-bottom:14px}
+.alert strong{color:#ffe2a0}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.input,.select,.textarea{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 10px;min-height:40px}
+.input:focus,.select:focus,.textarea:focus{outline:2px solid rgba(124,184,255,.35);border-color:var(--accent)}
+.input.search{min-width:260px;flex:1}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;position:sticky;top:64px;background:var(--bg);z-index:5}
+tr:hover td{background:rgba(255,255,255,.02)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;background:#6a7380} .status-dot.complete{background:var(--ok)} .status-dot.progress{background:var(--warn)}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(115px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:auto}
+.dayname{background:var(--panel2);padding:8px;text-align:center;font-size:12px;color:var(--muted);font-weight:700}
+.day{background:var(--panel);min-height:132px;padding:8px;cursor:pointer} .day.muted{opacity:.45} .day.today{outline:2px solid var(--accent);outline-offset:-2px}
+.daynum{font-size:12px;font-weight:800;margin-bottom:6px} .cal-event{display:block;width:100%;border:0;text-align:left;background:var(--panel2);color:var(--text);font-size:10px;padding:4px 5px;border-radius:6px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .cal-event.exam{color:#ffe2a0}
+.weekgrid{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:10px;overflow:auto;padding-bottom:4px}
+.weekday{min-width:130px} .weekhead{font-weight:800;margin-bottom:8px} .weekdate{font-size:12px;color:var(--muted)}
+.weekevent{padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:9px;margin-bottom:7px;font-size:12px}
+.examgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.examcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px} .countdown{font-size:24px;font-weight:900;color:var(--warn)} .progressbar{height:7px;border-radius:20px;background:#242c35;overflow:hidden;margin-top:8px} .progressbar span{display:block;height:100%;background:var(--accent2)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px;z-index:100} .modal-backdrop.open{display:flex}
+.modal{width:min(620px,100%);max-height:90vh;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
+.modal h3{margin:0 0 14px} .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px} .field{display:flex;flex-direction:column;gap:5px} .field.full{grid-column:1/-1} .field label{font-size:12px;color:var(--muted)} .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px} .settings-grid h3{margin-top:0}
+.toast{position:fixed;right:18px;bottom:18px;z-index:200;background:var(--panel2);border:1px solid var(--line);padding:12px 14px;border-radius:10px;box-shadow:var(--shadow);display:none;max-width:340px} .toast.show{display:block}
+@media (max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:static;min-height:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow:auto;padding:10px}.navbtn{width:auto;white-space:nowrap;margin:0}.grid4{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}main{padding:14px}}
+@media (max-width:600px){.topbar{align-items:flex-start}.brand small{display:none}.top-actions .btn:not(.primary){display:none}.grid4{grid-template-columns:1fr 1fr}.item{grid-template-columns:62px minmax(0,1fr)}.item>div:last-child{grid-column:2}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.input.search{min-width:0;width:100%}}
+
+/* Mobile app / PWA enhancements */
+@media (max-width:900px){
+  body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  .topbar{padding-top:calc(12px + env(safe-area-inset-top));position:sticky;top:0}
+  .sidebar{
+    position:fixed;left:0;right:0;bottom:0;top:auto;z-index:80;
+    min-height:auto;border:0;border-top:1px solid var(--line);
+    background:rgba(14,17,22,.97);backdrop-filter:blur(14px);
+    display:grid;grid-template-columns:repeat(7,1fr);gap:2px;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    overflow:visible;
+  }
+  .navbtn{
+    width:100%;min-width:0;display:flex;flex-direction:column;justify-content:center;
+    gap:1px;margin:0;padding:7px 2px;min-height:52px;font-size:10px;text-align:center;
+    border-radius:9px;white-space:nowrap;
+  }
+  .layout{display:block}
+  main{padding:14px 12px 18px}
+  .top-actions{gap:6px}
+  .btn,.input,.select,.textarea{min-height:44px}
+  .item,.habit{padding:13px}
+}
+@media (max-width:520px){
+  .brand h1{font-size:16px}
+  .logo{width:32px;height:32px}
+  .topbar{padding-left:12px;padding-right:12px}
+  .grid4{grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:12px}
+  .metric .value{font-size:23px}
+  .metric .label{font-size:12px}
+  .section-head h2{font-size:20px}
+  .table-wrap{border-radius:10px}
+  th,td{padding:9px 7px}
+  .calendar{grid-template-columns:repeat(7,minmax(92px,1fr))}
+  .modal-backdrop{padding:10px}
+  .modal{padding:15px;border-radius:14px}
+}
+.install-card{border-left:4px solid var(--accent)}
+.install-steps{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">DC</div><div><h1>Daily Command Center</h1><small>Habits · Planner · Assignments · Exam readiness</small></div></div>
+  <div class="top-actions">
+    <button class="btn" id="todayBtn">Go to today</button>
+    <button class="btn primary" id="addEventTop">+ Add event</button>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="sidebar">
+  <button class="navbtn active" data-view="today">▣ Today</button>
+  <button class="navbtn" data-view="week">▤ Week</button>
+  <button class="navbtn" data-view="month">▦ Month</button>
+  <button class="navbtn" data-view="assignments">✓ Assignments</button>
+  <button class="navbtn" data-view="exams">⚑ Exams</button>
+  <button class="navbtn" data-view="habits">↻ Habits</button>
+  <button class="navbtn" data-view="settings">⚙ Settings</button>
+</aside>
+
+<main>
+<section id="view-today" class="view active">
+  <div class="section-head">
+    <div><h2>Today</h2><div class="subtle" id="todayPretty"></div></div>
+    <input class="input" type="date" id="focusDate">
+  </div>
+  <div id="examAlertArea"></div>
+  <div class="grid4">
+    <div class="card metric"><div class="label">Due / scheduled</div><div class="value" id="mToday">0</div><div class="detail">on selected date</div></div>
+    <div class="card metric"><div class="label">Habits</div><div class="value" id="mHabits">0/0</div><div class="detail" id="mHabitPct">0% complete</div></div>
+    <div class="card metric"><div class="label">Next exam</div><div class="value" id="mExam">—</div><div class="detail" id="mExamDetail">No upcoming exam</div></div>
+    <div class="card metric"><div class="label">Open assignments</div><div class="value" id="mOpen">0</div><div class="detail">from selected date forward</div></div>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="section-head"><h2 style="font-size:18px">Daily planner</h2><button class="btn small" id="addEventToday">+ Event</button></div>
+      <div id="todayEvents" class="list"></div>
+    </div>
+    <div>
+      <div class="section-head"><h2 style="font-size:18px">Habits</h2><button class="btn small" id="addHabitToday">+ Habit</button></div>
+      <div id="todayHabits" class="list"></div>
+    </div>
+  </div>
+</section>
+
+<section id="view-week" class="view">
+  <div class="section-head"><div><h2>Week</h2><div class="subtle" id="weekRange"></div></div><div class="toolbar"><button class="btn" id="prevWeek">←</button><button class="btn" id="nextWeek">→</button></div></div>
+  <div id="weekGrid" class="weekgrid"></div>
+</section>
+
+<section id="view-month" class="view">
+  <div class="section-head"><div><h2>Month</h2><div class="subtle" id="monthLabel"></div></div><div class="toolbar"><button class="btn" id="prevMonth">←</button><button class="btn" id="nextMonth">→</button></div></div>
+  <div id="monthCalendar" class="calendar"></div>
+</section>
+
+<section id="view-assignments" class="view">
+  <div class="section-head"><div><h2>Assignments & Events</h2><div class="subtle">Masterlist data plus anything you add.</div></div><button class="btn primary" id="addEventAssignments">+ Add</button></div>
+  <div class="toolbar">
+    <input class="input search" id="searchAssignments" placeholder="Search class, title, type...">
+    <select class="select" id="filterCourse"><option value="">All classes</option></select>
+    <select class="select" id="filterType"><option value="">All types</option></select>
+    <select class="select" id="filterStatus"><option value="">All statuses</option><option>Not Started</option><option>In Progress</option><option>Submitted</option><option>Complete</option></select>
+    <select class="select" id="filterWhen"><option value="upcoming">Upcoming</option><option value="all">All dates</option><option value="overdue">Overdue</option></select>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Status</th><th>Due</th><th>Class</th><th>Type</th><th>Assignment / Event</th><th></th></tr></thead><tbody id="assignmentRows"></tbody></table></div>
+</section>
+
+<section id="view-exams" class="view">
+  <div class="section-head"><div><h2>Exam Center</h2><div class="subtle">Countdowns and one-click study-plan generation.</div></div></div>
+  <div id="examCards" class="examgrid"></div>
+</section>
+
+<section id="view-habits" class="view">
+  <div class="section-head"><div><h2>Habit Manager</h2><div class="subtle">Edit habits and review current streaks.</div></div><button class="btn primary" id="addHabitManager">+ Add habit</button></div>
+  <div id="habitManager" class="list"></div>
+</section>
+
+<section id="view-settings" class="view">
+  <div class="section-head"><div><h2>Settings & Data</h2><div class="subtle">Your changes are saved in this browser.</div></div></div>
+  <div class="settings-grid">
+    <div class="card"><h3>Exam alerts</h3><p class="subtle">Choose how many days ahead an exam appears as an urgent alert.</p><label class="field"><span class="subtle">Alert window</span><select class="select" id="alertDays"><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></label><br><button class="btn" id="notifyBtn">Enable browser notifications</button><p class="subtle">Browser notifications work while the app is open. Background notifications require hosting/PWA setup.</p></div>
+
+    <div class="card install-card"><h3>Install on your phone</h3>
+      <p class="subtle">Once this folder is hosted over HTTPS, install it like a normal app.</p>
+      <button class="btn primary" id="installAppBtn" style="display:none">Install app</button>
+      <div id="installHelp" class="subtle">
+        <strong>iPhone/iPad:</strong> open in Safari → Share → Add to Home Screen.<br>
+        <strong>Android:</strong> open in Chrome → menu → Install app / Add to Home screen.
+      </div>
+    </div>
+
+    <div class="card"><h3>Backup</h3><p class="subtle">Export all planner data, habits, completions, and settings.</p><button class="btn" id="exportBtn">Export backup</button> <label class="btn" for="importFile">Import backup</label><input id="importFile" type="file" accept=".json,application/json" hidden></div>
+    <div class="card"><h3>Starter data</h3><p class="subtle">The app started with 212 Masterlist entries from page 2 of your Fall 2026 tracker.</p><button class="btn danger" id="resetBtn">Reset to tracker data</button></div>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="modal-backdrop" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+<div class="modal">
+  <h3 id="eventModalTitle">Add event</h3>
+  <form id="eventForm">
+    <input type="hidden" id="eventId">
+    <div class="formgrid">
+      <div class="field full"><label>Title</label><input class="input" id="eventTitle" required maxlength="160"></div>
+      <div class="field"><label>Class / category</label><input class="input" id="eventCourse" maxlength="40" placeholder="CHEM-212 or Personal"></div>
+      <div class="field"><label>Type</label><select class="select" id="eventType"><option>Homework</option><option>Reading</option><option>Quiz</option><option>Exam</option><option>Lab Report</option><option>Lab Worksheet</option><option>Practice Problems</option><option>Study</option><option>Appointment</option><option>Personal</option><option>Other</option></select></div>
+      <div class="field"><label>Date</label><input class="input" type="date" id="eventDate" required></div>
+      <div class="field"><label>Time</label><input class="input" type="time" id="eventTime" required></div>
+      <div class="field"><label>Status</label><select class="select" id="eventStatus"><option>Not Started</option><option>In Progress</option><option>Submitted</option><option>Complete</option></select></div>
+      <div class="field full"><label>Notes</label><textarea class="textarea" id="eventNotes" rows="3" maxlength="800"></textarea></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn danger" id="deleteEventBtn" style="margin-right:auto;display:none">Delete</button><button type="button" class="btn" data-close="eventModal">Cancel</button><button type="submit" class="btn primary">Save event</button></div>
+  </form>
+</div></div>
+
+<div class="modal-backdrop" id="habitModal" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">
+<div class="modal">
+  <h3 id="habitModalTitle">Add habit</h3>
+  <form id="habitForm">
+    <input type="hidden" id="habitId">
+    <div class="formgrid">
+      <div class="field full"><label>Habit name</label><input class="input" id="habitName" required maxlength="80"></div>
+      <div class="field"><label>Daily goal</label><input class="input" id="habitGoal" maxlength="80" placeholder="30 min"></div>
+      <div class="field"><label>Active</label><select class="select" id="habitActive"><option value="true">Active</option><option value="false">Paused</option></select></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn danger" id="deleteHabitBtn" style="margin-right:auto;display:none">Delete</button><button type="button" class="btn" data-close="habitModal">Cancel</button><button type="submit" class="btn primary">Save habit</button></div>
+  </form>
+</div></div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script>
+const SEED_EVENTS = [{"id": "seed-11", "status": "Submitted", "date": "2026-08-01", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-12", "status": "Submitted", "date": "2026-08-25", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "Measurements & Units Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-13", "status": "Submitted", "date": "2026-08-25", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "Connect Orientation Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-14", "status": "In Progress", "date": "2026-08-25", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch. 1: Introduction", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-15", "status": "Submitted", "date": "2026-08-25", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "Measurments", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-16", "status": "In Progress", "date": "2026-08-26", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Studying Life", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-17", "status": "Not Started", "date": "2026-08-26", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 12: Intermolecular Forces", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-18", "status": "Submitted", "date": "2026-08-26", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Physics Intro Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-19", "status": "Submitted", "date": "2026-08-26", "time": "23:59", "course": "PHYS-244", "type": "Lab Worksheet", "title": "Physics Safety Contract", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-20", "status": "Submitted", "date": "2026-08-27", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "1D Kinematics Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-21", "status": "In Progress", "date": "2026-08-27", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch. 2: 1D Kinematics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-22", "status": "Submitted", "date": "2026-08-27", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "1-D Kinematics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-23", "status": "Submitted", "date": "2026-08-28", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "VSEPR Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-24", "status": "Submitted", "date": "2026-08-31", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 1 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-25", "status": "Submitted", "date": "2026-08-31", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 1 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-26", "status": "Submitted", "date": "2026-08-31", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 1 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-27", "status": "Submitted", "date": "2026-08-31", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Math/Chem Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-28", "status": "Submitted", "date": "2026-08-31", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 2 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-29", "status": "Submitted", "date": "2026-08-31", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "ALEKS Pre-Test", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-30", "status": "Submitted", "date": "2026-09-01", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "Unit Conversions & Measurements Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-31", "status": "In Progress", "date": "2026-09-02", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Small Molecules", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-32", "status": "Not Started", "date": "2026-09-02", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 13: Properties of Mixtures", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-33", "status": "Submitted", "date": "2026-09-02", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 1 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-34", "status": "Submitted", "date": "2026-09-02", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-35", "status": "Submitted", "date": "2026-09-03", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "1D Motion Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-36", "status": "Not Started", "date": "2026-09-03", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch. 3: 2D Kinematics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-37", "status": "Submitted", "date": "2026-09-03", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "Projectile Motion", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-38", "status": "Submitted", "date": "2026-09-04", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "VSEPR Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-39", "status": "Submitted", "date": "2026-09-04", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "VSEPR Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-40", "status": "Submitted", "date": "2026-09-04", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Hess's Law Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-41", "status": "Submitted", "date": "2026-09-07", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 2 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-42", "status": "Submitted", "date": "2026-09-07", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 2 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-43", "status": "Submitted", "date": "2026-09-07", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 2 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-44", "status": "", "date": "2026-09-09", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Proteins, Carbs, & Lipids", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-45", "status": "Submitted", "date": "2026-09-09", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 2 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-46", "status": "Submitted", "date": "2026-09-09", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 2", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-47", "status": "Submitted", "date": "2026-09-10", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "2D Motion Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-48", "status": "", "date": "2026-09-10", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch. 4: Forces", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-49", "status": "Submitted", "date": "2026-09-10", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "Newton's Law Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-50", "status": "Submitted", "date": "2026-09-11", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Hess's Law Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-51", "status": "", "date": "2026-09-11", "time": "10:15", "course": "CHEM-212", "type": "Exam", "title": "Exam 1: Chapters 12-13", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-52", "status": "Submitted", "date": "2026-09-11", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Hess's Law Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-53", "status": "", "date": "2026-09-11", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Solvent Polarities Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-54", "status": "", "date": "2026-09-14", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 3 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-55", "status": "", "date": "2026-09-14", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 3 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-56", "status": "", "date": "2026-09-14", "time": "16:15", "course": "BIOL-215", "type": "Quiz", "title": "Quiz 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-57", "status": "", "date": "2026-09-14", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 3 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-58", "status": "", "date": "2026-09-15", "time": "23:59", "course": "PHYS-243", "type": "Quiz", "title": "Friction", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-59", "status": "", "date": "2026-09-16", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 1: Chapters 1-4", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-60", "status": "", "date": "2026-09-16", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Nucleic Acids & Origins of Life", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-61", "status": "", "date": "2026-09-16", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 16: Kinetics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-62", "status": "", "date": "2026-09-17", "time": "23:59", "course": "PHYS-243", "type": "Homework", "title": "Forces Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-63", "status": "", "date": "2026-09-18", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Solvent Polarities Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-64", "status": "", "date": "2026-09-18", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Cell, Working Units of Life", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-65", "status": "", "date": "2026-09-18", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 12 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-66", "status": "", "date": "2026-09-18", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 13 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-67", "status": "", "date": "2026-09-18", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 16 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-68", "status": "", "date": "2026-09-18", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Solvent Polarities Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-69", "status": "", "date": "2026-09-18", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Molecular Mass Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-70", "status": "", "date": "2026-09-21", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 4 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-71", "status": "", "date": "2026-09-21", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 4 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-72", "status": "", "date": "2026-09-21", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 3 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-73", "status": "", "date": "2026-09-21", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 4 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-74", "status": "", "date": "2026-09-22", "time": "11:45", "course": "PHYS-243", "type": "Exam", "title": "Practice Exam 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-75", "status": "", "date": "2026-09-23", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 2: Chapters 5, 8", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-76", "status": "", "date": "2026-09-23", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Cell Energy, Enzymes, & Metabolism", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-77", "status": "", "date": "2026-09-23", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 17: Chemical Equilibrium", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-78", "status": "", "date": "2026-09-23", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 3 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-79", "status": "", "date": "2026-09-23", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 3", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-80", "status": "", "date": "2026-09-24", "time": "11:45", "course": "PHYS-243", "type": "Exam", "title": "Exam 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-81", "status": "", "date": "2026-09-25", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Molecular Mass Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-82", "status": "", "date": "2026-09-25", "time": "11:45", "course": "BIOL-213", "type": "Exam", "title": "Exam 1: Chapters 1-5", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-83", "status": "", "date": "2026-09-25", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Molecular Mass Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-84", "status": "", "date": "2026-09-25", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Synthesis of Fe(III) Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-85", "status": "", "date": "2026-09-28", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 5 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-86", "status": "", "date": "2026-09-28", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 5 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-87", "status": "", "date": "2026-09-28", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 4 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-88", "status": "", "date": "2026-09-28", "time": "16:15", "course": "BIOL-215", "type": "Quiz", "title": "Quiz 2", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-89", "status": "", "date": "2026-09-28", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 5A Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-90", "status": "", "date": "2026-09-29", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 6: Work & Energy", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-91", "status": "", "date": "2026-09-30", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 4 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-92", "status": "", "date": "2026-09-30", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 4", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-93", "status": "", "date": "2026-10-02", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Synthesis of Fe(III) Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-94", "status": "", "date": "2026-10-02", "time": "10:15", "course": "CHEM-212", "type": "Exam", "title": "Exam 2: Chapters 16-17", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-95", "status": "", "date": "2026-10-02", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Synthesis of Fe(III) Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-96", "status": "", "date": "2026-10-02", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Chemical Kinetics Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-97", "status": "", "date": "2026-10-05", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 6 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-98", "status": "", "date": "2026-10-05", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 6 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-99", "status": "", "date": "2026-10-05", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 5A Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-100", "status": "", "date": "2026-10-05", "time": "13:30", "course": "BIOL-215", "type": "Lab Report", "title": "Lab Report: Introduction", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-101", "status": "", "date": "2026-10-05", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 5B Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-102", "status": "", "date": "2026-10-06", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 7: Linear Momentum", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-103", "status": "", "date": "2026-10-07", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 3: Chapters 8-9", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-104", "status": "", "date": "2026-10-07", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Pathways that Harvest Energy", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-105", "status": "", "date": "2026-10-07", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 18: Acid-Base Equilibrium", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-106", "status": "", "date": "2026-10-07", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 5 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-107", "status": "", "date": "2026-10-07", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 5", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-108", "status": "", "date": "2026-10-09", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Chemical Kinetics Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-109", "status": "", "date": "2026-10-09", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Photosynthesis", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-110", "status": "", "date": "2026-10-09", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Chemical Kinetics Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-111", "status": "", "date": "2026-10-09", "time": "12:30", "course": "CHEM-214", "type": "Exam", "title": "Midterm Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-112", "status": "", "date": "2026-10-12", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 7 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-113", "status": "", "date": "2026-10-12", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 7 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-114", "status": "", "date": "2026-10-12", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp 5B Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-115", "status": "", "date": "2026-10-13", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 5: Circular Motion", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-116", "status": "", "date": "2026-10-14", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 6 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-117", "status": "", "date": "2026-10-14", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 6", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-118", "status": "", "date": "2026-10-16", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 4: Chapters 6, 10", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-119", "status": "", "date": "2026-10-16", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Cell Membrane", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-120", "status": "", "date": "2026-10-16", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 19: Ionic Equilibria in Aq Soln", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-121", "status": "", "date": "2026-10-16", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Equilibrium Constant Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-122", "status": "", "date": "2026-10-19", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 8 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-123", "status": "", "date": "2026-10-19", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 8 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-124", "status": "", "date": "2026-10-19", "time": "16:15", "course": "BIOL-215", "type": "Quiz", "title": "Quiz 3", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-125", "status": "", "date": "2026-10-19", "time": "13:30", "course": "BIOL-215", "type": "Lab Report", "title": "Lab Report: M&M/Results", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-126", "status": "", "date": "2026-10-19", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 6 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-127", "status": "", "date": "2026-10-20", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 8: Rotational Motion", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-128", "status": "", "date": "2026-10-21", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Cell Signaling", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-129", "status": "", "date": "2026-10-21", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 7 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-130", "status": "", "date": "2026-10-21", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 7", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-131", "status": "", "date": "2026-10-23", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Equilibrium Constant Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-132", "status": "", "date": "2026-10-23", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 17 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-133", "status": "", "date": "2026-10-23", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 18 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-134", "status": "", "date": "2026-10-23", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 19 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-135", "status": "", "date": "2026-10-23", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Equilibrium Constant Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-136", "status": "", "date": "2026-10-23", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Acidity Constant Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-137", "status": "", "date": "2026-10-26", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 9 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-138", "status": "", "date": "2026-10-26", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 9 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-139", "status": "", "date": "2026-10-26", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 6 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-140", "status": "", "date": "2026-10-26", "time": "16:15", "course": "BIOL-215", "type": "Quiz", "title": "Quiz 4", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-141", "status": "", "date": "2026-10-26", "time": "13:30", "course": "BIOL-215", "type": "Lab Report", "title": "Lab Report: Conclusions", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-142", "status": "", "date": "2026-10-26", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 7 & 8B  Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-143", "status": "", "date": "2026-10-27", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 9: Fluids", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-144", "status": "", "date": "2026-10-28", "time": "10:15", "course": "CHEM-212", "type": "Exam", "title": "Exam 3: Chapters 18-19", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-145", "status": "", "date": "2026-10-30", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Acidity Constant Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-146", "status": "", "date": "2026-10-30", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "The Cell Cycle", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-147", "status": "", "date": "2026-10-30", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 20: Thermodynamics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-148", "status": "", "date": "2026-10-30", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Acidity Constant Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-149", "status": "", "date": "2026-10-30", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Dissociation Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-150", "status": "", "date": "2026-11-02", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 10 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-151", "status": "", "date": "2026-11-02", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 10 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-152", "status": "", "date": "2026-11-02", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 7 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-153", "status": "", "date": "2026-11-02", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 8B Wotksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-154", "status": "", "date": "2026-11-04", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Meiosis", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-155", "status": "", "date": "2026-11-04", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 8 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-156", "status": "", "date": "2026-11-04", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 8", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-157", "status": "", "date": "2026-11-05", "time": "11:30", "course": "PHYS-243", "type": "Exam", "title": "Exam 2", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-158", "status": "", "date": "2026-11-06", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Dissociation Constants Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-159", "status": "", "date": "2026-11-06", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 5: Chapters 7, 11", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-160", "status": "", "date": "2026-11-06", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "Cancers", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-161", "status": "", "date": "2026-11-06", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Dissociation Constants Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-162", "status": "", "date": "2026-11-06", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Solubility Constant Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-163", "status": "", "date": "2026-11-09", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 11 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-164", "status": "", "date": "2026-11-09", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 11 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-165", "status": "", "date": "2026-11-09", "time": "16:15", "course": "BIOL-215", "type": "Quiz", "title": "Quiz 5", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-166", "status": "", "date": "2026-11-09", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 8A & 9 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-167", "status": "", "date": "2026-11-10", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 10: Elasticity and Oscillations", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-168", "status": "", "date": "2026-11-11", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "DNA", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-169", "status": "", "date": "2026-11-11", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 21: Electrochemistry", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-170", "status": "", "date": "2026-11-11", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 9 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-171", "status": "", "date": "2026-11-11", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 9", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-172", "status": "", "date": "2026-11-13", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Solubility Product Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-173", "status": "", "date": "2026-11-13", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Solubility Product Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-174", "status": "", "date": "2026-11-13", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "KTOF3 Redox Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-175", "status": "", "date": "2026-11-16", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 12 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-176", "status": "", "date": "2026-11-16", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 12 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-177", "status": "", "date": "2026-11-16", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 8A Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-178", "status": "", "date": "2026-11-16", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 9 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-179", "status": "", "date": "2026-11-16", "time": "13:30", "course": "BIOL-215", "type": "Lab Report", "title": "Lab Report: Full", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-180", "status": "", "date": "2026-11-16", "time": "12:30", "course": "BIOL-215", "type": "Reading", "title": "Lab Ex 10 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-181", "status": "", "date": "2026-11-17", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 11: Waves", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-182", "status": "", "date": "2026-11-18", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "From DNA to Protein", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-183", "status": "", "date": "2026-11-18", "time": "13:30", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 10 Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-184", "status": "", "date": "2026-11-18", "time": "23:59", "course": "PHYS-244", "type": "Lab Report", "title": "Lab 10", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-185", "status": "", "date": "2026-11-19", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 12: Sounds", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-186", "status": "", "date": "2026-11-20", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "KTOF3 Redox Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-187", "status": "", "date": "2026-11-20", "time": "11:45", "course": "BIOL-213", "type": "Exam", "title": "Exam 3: Chapters 6-7, 11, 13", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-188", "status": "", "date": "2026-11-20", "time": "10:15", "course": "CHEM-212", "type": "Exam", "title": "Exam 4: Chapters 20-21", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-189", "status": "", "date": "2026-11-20", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "KTOF3 Redox Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-190", "status": "", "date": "2026-11-20", "time": "12:30", "course": "CHEM-214", "type": "Reading", "title": "Electrochemical Pre-Lab", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-191", "status": "", "date": "2026-11-22", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 20 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-192", "status": "", "date": "2026-11-22", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 21 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-193", "status": "", "date": "2026-11-23", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 13 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-194", "status": "", "date": "2026-11-23", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 13 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-195", "status": "", "date": "2026-11-23", "time": "13:30", "course": "BIOL-215", "type": "Lab Worksheet", "title": "Exp. 10 Worksheet", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-196", "status": "", "date": "2026-11-24", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 13: Ideal Gas Laws", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-197", "status": "", "date": "2026-11-30", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 14 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-198", "status": "", "date": "2026-11-30", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 14 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-199", "status": "", "date": "2026-11-30", "time": "16:15", "course": "BIOL-215", "type": "Exam", "title": "Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-200", "status": "", "date": "2026-12-01", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 14: Heat", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-201", "status": "", "date": "2026-12-02", "time": "09:00", "course": "CHEM-212", "type": "Reading", "title": "Ch 24: Nuclear Chemistry", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-202", "status": "", "date": "2026-12-03", "time": "10:30", "course": "PHYS-243", "type": "Reading", "title": "Ch 15: Thermodynamics", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-203", "status": "", "date": "2026-12-04", "time": "12:30", "course": "CHEM-214", "type": "Quiz", "title": "Electrochemical Lab Quiz", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-204", "status": "", "date": "2026-12-04", "time": "11:45", "course": "BIOL-213", "type": "Quiz", "title": "Quiz 6: Chapters 13-14, 18", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-205", "status": "", "date": "2026-12-04", "time": "10:30", "course": "BIOL-213", "type": "Reading", "title": "DNA Technology", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-206", "status": "", "date": "2026-12-04", "time": "12:30", "course": "CHEM-214", "type": "Lab Report", "title": "Electrochemical Lab Report", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-207", "status": "", "date": "2026-12-04", "time": "12:30", "course": "CHEM-214", "type": "Exam", "title": "Final Exam ", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-208", "status": "", "date": "2026-12-07", "time": "23:59", "course": "PHYS-243", "type": "Exam", "title": "Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-209", "status": "", "date": "2026-12-07", "time": "23:59", "course": "PRECALC", "type": "Homework", "title": "Module 15 Homework", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-210", "status": "", "date": "2026-12-07", "time": "23:59", "course": "PRECALC", "type": "Practice Problems", "title": "Module 15 Practice Problems", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-211", "status": "In Progress", "date": "2026-12-08", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Adaptive Algebra Review", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-212", "status": "", "date": "2026-12-08", "time": "23:59", "course": "CHEM-212", "type": "Homework", "title": "Ch 24 ALEKS", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-213", "status": "", "date": "2026-12-11", "time": "11:45", "course": "BIOL-213", "type": "Exam", "title": "Exam 4: 14, 18", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-214", "status": "", "date": "2026-12-11", "time": "11:45", "course": "BIOL-213", "type": "Exam", "title": "Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-215", "status": "", "date": "2026-12-11", "time": "10:15", "course": "CHEM-212", "type": "Exam", "title": "Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-216", "status": "", "date": "2026-12-23", "time": "11:45", "course": "BIOL-213", "type": "Exam", "title": "Exam 2: Chapters 8-10", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-217", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Midterm Exam 2", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-218", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Midterm Exam 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-219", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Practice Midterm Exam 1", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-220", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Practice Midterm Exam 2", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-221", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Practice Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}, {"id": "seed-222", "status": "", "date": "2027-01-01", "time": "23:59", "course": "PRECALC", "type": "Exam", "title": "Final Exam", "notes": "", "source": "Fall 2026 Masterlist"}];
+const SEED_HABITS = [{"id": "habit-bible", "name": "Bible Study", "goal": "30 min", "frequency": "daily", "active": true}, {"id": "habit-reading", "name": "Reading", "goal": "30 min", "frequency": "daily", "active": true}, {"id": "habit-notes", "name": "Book Notes", "goal": "30 min", "frequency": "daily", "active": true}, {"id": "habit-language", "name": "Portuguese / Spanish", "goal": "30 min", "frequency": "daily", "active": true}, {"id": "habit-workout", "name": "Workout", "goal": "30+ min", "frequency": "daily", "active": true}, {"id": "habit-cars", "name": "JW CARS", "goal": "1 passage", "frequency": "daily", "active": true}, {"id": "habit-mcat", "name": "MCAT Study", "goal": "Study block", "frequency": "daily", "active": true}];
+const APP_VERSION = 1;
+const KEY = "daily-command-center-v1";
+const isoToday = () => {
+  const d=new Date(); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`;
+};
+const parseDate = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const fmtDate = (s, opts={month:"short",day:"numeric"}) => parseDate(s).toLocaleDateString(undefined, opts);
+const diffDays = (a,b) => Math.round((parseDate(a)-parseDate(b))/86400000);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+const uid = p => p+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
+
+function defaultState() {
+  return {version:APP_VERSION, events:structuredClone(SEED_EVENTS), habits:structuredClone(SEED_HABITS), completions:{}, settings:{alertDays:7}};
+}
+function loadState(){
+  try{const raw=localStorage.getItem(KEY); if(!raw)return defaultState(); const s=JSON.parse(raw); return {...defaultState(),...s,settings:{...defaultState().settings,...(s.settings||{})}};}
+  catch(e){return defaultState();}
+}
+let state=loadState();
+let focusDate=isoToday();
+let weekAnchor=parseDate(focusDate);
+let monthAnchor=new Date(weekAnchor.getFullYear(),weekAnchor.getMonth(),1);
+
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+function toast(msg){const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove("show"),2200);}
+function isDone(e){return ["Submitted","Complete"].includes(e.status);}
+function statusClass(s){return s==="Submitted"||s==="Complete"?"complete":s==="In Progress"?"progress":"";}
+
+function switchView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+  if(name==="today") renderToday();
+  if(name==="week") renderWeek();
+  if(name==="month") renderMonth();
+  if(name==="assignments") renderAssignments();
+  if(name==="exams") renderExams();
+  if(name==="habits") renderHabitManager();
+}
+document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+
+function activeHabits(){return state.habits.filter(h=>h.active!==false);}
+function completionKey(date,id){return date+"|"+id;}
+function habitDone(date,id){return !!state.completions[completionKey(date,id)];}
+function habitStreak(id, endDate=focusDate){
+  let n=0,d=parseDate(endDate);
+  for(let i=0;i<366;i++){const s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; if(habitDone(s,id)){n++;d.setDate(d.getDate()-1);}else break;}
+  return n;
+}
+function upcomingExams(from=isoToday()){return state.events.filter(e=>e.type==="Exam"&&e.date>=from&&!isDone(e)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));}
+
+function renderToday(){
+  document.getElementById("focusDate").value=focusDate;
+  document.getElementById("todayPretty").textContent=fmtDate(focusDate,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  const evs=state.events.filter(e=>e.date===focusDate).sort((a,b)=>a.time.localeCompare(b.time));
+  document.getElementById("mToday").textContent=evs.length;
+  const hs=activeHabits(), done=hs.filter(h=>habitDone(focusDate,h.id)).length;
+  document.getElementById("mHabits").textContent=`${done}/${hs.length}`;
+  document.getElementById("mHabitPct").textContent=(hs.length?Math.round(done/hs.length*100):0)+"% complete";
+  const next=upcomingExams(focusDate)[0];
+  document.getElementById("mExam").textContent=next?Math.max(0,diffDays(next.date,focusDate))+"d":"—";
+  document.getElementById("mExamDetail").textContent=next?`${next.course} · ${next.title} · ${fmtDate(next.date)}`:"No upcoming exam";
+  const open=state.events.filter(e=>e.date>=focusDate&&!isDone(e)&&e.type!=="Reading").length;
+  document.getElementById("mOpen").textContent=open;
+
+  const list=document.getElementById("todayEvents");
+  list.innerHTML=evs.length?evs.map(e=>`<div class="item">
+    <div class="time">${esc(e.time)}</div>
+    <div><div class="title">${esc(e.title)}</div><div class="meta">${esc(e.course)} · ${esc(e.type)} · <span class="status-dot ${statusClass(e.status)}"></span>${esc(e.status||"Not Started")}</div>${e.notes?`<div class="meta">${esc(e.notes)}</div>`:""}</div>
+    <div><button class="btn small editEvent" data-id="${esc(e.id)}">Edit</button></div>
+  </div>`).join(""):`<div class="empty">Nothing scheduled for this date. Add a study block, appointment, or personal event.</div>`;
+
+  const hl=document.getElementById("todayHabits");
+  hl.innerHTML=hs.length?hs.map(h=>`<label class="habit">
+    <input type="checkbox" class="habitCheck" data-id="${esc(h.id)}" ${habitDone(focusDate,h.id)?"checked":""}>
+    <div><div class="name">${esc(h.name)}</div><div class="goal">${esc(h.goal||"Daily")}</div></div>
+    <div class="streak">${habitStreak(h.id)} day streak</div>
+  </label>`).join(""):`<div class="empty">No active habits.</div>`;
+
+  document.querySelectorAll(".editEvent").forEach(b=>b.addEventListener("click",()=>openEvent(b.dataset.id)));
+  document.querySelectorAll(".habitCheck").forEach(c=>c.addEventListener("change",()=>{state.completions[completionKey(focusDate,c.dataset.id)]=c.checked;save();renderToday();}));
+
+  const ad=Number(state.settings.alertDays||7);
+  const urgent=upcomingExams(focusDate).filter(e=>diffDays(e.date,focusDate)>=0&&diffDays(e.date,focusDate)<=ad);
+  document.getElementById("examAlertArea").innerHTML=urgent.length?`<div class="alert"><strong>Exam alert:</strong> ${urgent.slice(0,3).map(e=>`${esc(e.course)} ${esc(e.title)} in ${diffDays(e.date,focusDate)} day${diffDays(e.date,focusDate)===1?"":"s"}`).join(" · ")}</div>`:"";
+}
+
+function mondayOf(d){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);x.setHours(0,0,0,0);return x;}
+function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function renderWeek(){
+  const mon=mondayOf(weekAnchor), sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  document.getElementById("weekRange").textContent=`${mon.toLocaleDateString(undefined,{month:"short",day:"numeric"})} – ${sun.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}`;
+  let html="";
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const ds=iso(d);const evs=state.events.filter(e=>e.date===ds).sort((a,b)=>a.time.localeCompare(b.time)); html+=`<div class="weekday"><div class="weekhead">${d.toLocaleDateString(undefined,{weekday:"short"})} <span class="weekdate">${d.toLocaleDateString(undefined,{month:"numeric",day:"numeric"})}</span></div>${evs.length?evs.map(e=>`<div class="weekevent" data-id="${esc(e.id)}"><strong>${esc(e.time)}</strong> · ${esc(e.title)}<div class="meta">${esc(e.course)} · ${esc(e.type)}</div></div>`).join(""):`<div class="subtle">No events</div>`}</div>`;}
+  document.getElementById("weekGrid").innerHTML=html;
+  document.querySelectorAll(".weekevent").forEach(x=>x.addEventListener("click",()=>openEvent(x.dataset.id)));
+}
+
+function renderMonth(){
+  const y=monthAnchor.getFullYear(),m=monthAnchor.getMonth();
+  document.getElementById("monthLabel").textContent=monthAnchor.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  const first=new Date(y,m,1); const start=new Date(first); start.setDate(first.getDate()-first.getDay());
+  let html=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(x=>`<div class="dayname">${x}</div>`).join("");
+  for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=iso(d);const evs=state.events.filter(e=>e.date===ds).sort((a,b)=>a.time.localeCompare(b.time)); const cls=["day"]; if(d.getMonth()!==m)cls.push("muted"); if(ds===isoToday())cls.push("today"); html+=`<div class="${cls.join(" ")}" data-date="${ds}"><div class="daynum">${d.getDate()}</div>${evs.slice(0,4).map(e=>`<button class="cal-event ${e.type==="Exam"?"exam":""}" data-id="${esc(e.id)}">${esc(e.course)} · ${esc(e.title)}</button>`).join("")}${evs.length>4?`<div class="meta">+${evs.length-4} more</div>`:""}</div>`;}
+  document.getElementById("monthCalendar").innerHTML=html;
+  document.querySelectorAll(".cal-event").forEach(b=>b.addEventListener("click",ev=>{ev.stopPropagation();openEvent(b.dataset.id);}));
+  document.querySelectorAll(".day").forEach(d=>d.addEventListener("click",()=>{focusDate=d.dataset.date;switchView("today");}));
+}
+
+function buildFilters(){
+  const courses=[...new Set(state.events.map(e=>e.course).filter(Boolean))].sort();
+  const types=[...new Set(state.events.map(e=>e.type).filter(Boolean))].sort();
+  const fc=document.getElementById("filterCourse"), ft=document.getElementById("filterType");
+  const cv=fc.value,tv=ft.value;
+  fc.innerHTML='<option value="">All classes</option>'+courses.map(x=>`<option>${esc(x)}</option>`).join("");
+  ft.innerHTML='<option value="">All types</option>'+types.map(x=>`<option>${esc(x)}</option>`).join("");
+  fc.value=cv;ft.value=tv;
+}
+function renderAssignments(){
+  buildFilters();
+  const q=document.getElementById("searchAssignments").value.trim().toLowerCase();
+  const course=document.getElementById("filterCourse").value, type=document.getElementById("filterType").value, status=document.getElementById("filterStatus").value, when=document.getElementById("filterWhen").value, today=isoToday();
+  let arr=state.events.filter(e=>(!q||[e.title,e.course,e.type,e.notes].join(" ").toLowerCase().includes(q))&&(!course||e.course===course)&&(!type||e.type===type)&&(!status||(status==="Not Started"?(e.status===""||e.status==="Not Started"):e.status===status)));
+  if(when==="upcoming")arr=arr.filter(e=>e.date>=today); if(when==="overdue")arr=arr.filter(e=>e.date<today&&!isDone(e));
+  arr.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  document.getElementById("assignmentRows").innerHTML=arr.map(e=>`<tr>
+    <td><span class="status-dot ${statusClass(e.status)}"></span>${esc(e.status||"Not Started")}</td>
+    <td>${fmtDate(e.date)}<div class="meta">${esc(e.time)}</div></td>
+    <td>${esc(e.course)}</td><td><span class="pill ${e.type==="Exam"?"exam":""}">${esc(e.type)}</span></td>
+    <td><strong>${esc(e.title)}</strong>${e.notes?`<div class="meta">${esc(e.notes)}</div>`:""}</td>
+    <td><button class="btn small editRow" data-id="${esc(e.id)}">Edit</button></td>
+  </tr>`).join("");
+  document.querySelectorAll(".editRow").forEach(b=>b.addEventListener("click",()=>openEvent(b.dataset.id)));
+}
+
+function renderExams(){
+  const today=isoToday(); const exams=state.events.filter(e=>e.type==="Exam"&&e.date>=today).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  document.getElementById("examCards").innerHTML=exams.length?exams.map(e=>{const d=diffDays(e.date,today);return `<div class="examcard"><div class="pill exam">${esc(e.course)}</div><h3 style="margin:8px 0 3px">${esc(e.title)}</h3><div class="meta">${fmtDate(e.date,{weekday:"short",month:"short",day:"numeric",year:"numeric"})} · ${esc(e.time)}</div><div class="countdown">${d===0?"TODAY":d+" days"}</div><div class="modal-actions" style="justify-content:flex-start;margin-top:10px"><button class="btn small studyPlan" data-id="${esc(e.id)}">Create study plan</button><button class="btn small editExam" data-id="${esc(e.id)}">Edit</button></div></div>`;}).join(""):`<div class="empty">No upcoming exams.</div>`;
+  document.querySelectorAll(".editExam").forEach(b=>b.addEventListener("click",()=>openEvent(b.dataset.id)));
+  document.querySelectorAll(".studyPlan").forEach(b=>b.addEventListener("click",()=>createStudyPlan(b.dataset.id)));
+}
+function createStudyPlan(examId){
+  const exam=state.events.find(e=>e.id===examId); if(!exam)return;
+  const examDate=parseDate(exam.date); const offsets=[14,7,3,1]; const labels={14:"Content review",7:"Practice questions",3:"Weak-area review",1:"Final review"};
+  let added=0;
+  offsets.forEach(off=>{const d=new Date(examDate);d.setDate(d.getDate()-off);const ds=iso(d);if(ds<isoToday())return;const title=`${labels[off]} — ${exam.title}`; if(state.events.some(e=>e.date===ds&&e.title===title))return; state.events.push({id:uid("study"),status:"Not Started",date:ds,time:"19:00",course:exam.course,type:"Study",title,notes:`Auto-generated for ${exam.title} on ${exam.date}`,source:"Study plan"});added++;});
+  save(); toast(added?`Created ${added} study block${added===1?"":"s"}.`:"Study blocks already exist or dates have passed."); renderExams();
+}
+
+function renderHabitManager(){
+  const today=isoToday();
+  document.getElementById("habitManager").innerHTML=state.habits.map(h=>`<div class="habit"><div>↻</div><div><div class="name">${esc(h.name)} ${h.active===false?'<span class="pill">Paused</span>':""}</div><div class="goal">${esc(h.goal||"Daily")} · Current streak: ${habitStreak(h.id,today)} days</div></div><button class="btn small editHabit" data-id="${esc(h.id)}">Edit</button></div>`).join("");
+  document.querySelectorAll(".editHabit").forEach(b=>b.addEventListener("click",()=>openHabit(b.dataset.id)));
+}
+
+function openModal(id){document.getElementById(id).classList.add("open");}
+function closeModal(id){document.getElementById(id).classList.remove("open");}
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-backdrop").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id);}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal-backdrop.open").forEach(m=>closeModal(m.id));});
+
+function openEvent(id=null){
+  const e=id?state.events.find(x=>x.id===id):null;
+  document.getElementById("eventModalTitle").textContent=e?"Edit event":"Add event";
+  document.getElementById("eventId").value=e?.id||"";
+  document.getElementById("eventTitle").value=e?.title||"";
+  document.getElementById("eventCourse").value=e?.course||"";
+  document.getElementById("eventType").value=e?.type||"Homework";
+  document.getElementById("eventDate").value=e?.date||focusDate;
+  document.getElementById("eventTime").value=e?.time||"19:00";
+  document.getElementById("eventStatus").value=e?.status||"Not Started";
+  document.getElementById("eventNotes").value=e?.notes||"";
+  document.getElementById("deleteEventBtn").style.display=e?"inline-block":"none";
+  openModal("eventModal");
+  setTimeout(()=>document.getElementById("eventTitle").focus(),40);
+}
+document.getElementById("eventForm").addEventListener("submit",e=>{e.preventDefault();const id=document.getElementById("eventId").value;const obj={id:id||uid("event"),title:document.getElementById("eventTitle").value.trim(),course:document.getElementById("eventCourse").value.trim()||"Personal",type:document.getElementById("eventType").value,date:document.getElementById("eventDate").value,time:document.getElementById("eventTime").value,status:document.getElementById("eventStatus").value,notes:document.getElementById("eventNotes").value.trim(),source:id?(state.events.find(x=>x.id===id)?.source||"User"):"User"}; if(!obj.title||!obj.date||!obj.time)return; if(id)state.events=state.events.map(x=>x.id===id?obj:x);else state.events.push(obj);save();closeModal("eventModal");toast("Event saved.");renderAll();});
+document.getElementById("deleteEventBtn").addEventListener("click",()=>{const id=document.getElementById("eventId").value;if(!id)return;if(confirm("Delete this event?")){state.events=state.events.filter(e=>e.id!==id);save();closeModal("eventModal");toast("Event deleted.");renderAll();}});
+
+function openHabit(id=null){
+  const h=id?state.habits.find(x=>x.id===id):null;
+  document.getElementById("habitModalTitle").textContent=h?"Edit habit":"Add habit";
+  document.getElementById("habitId").value=h?.id||"";
+  document.getElementById("habitName").value=h?.name||"";
+  document.getElementById("habitGoal").value=h?.goal||"";
+  document.getElementById("habitActive").value=String(h?.active!==false);
+  document.getElementById("deleteHabitBtn").style.display=h?"inline-block":"none";
+  openModal("habitModal");setTimeout(()=>document.getElementById("habitName").focus(),40);
+}
+document.getElementById("habitForm").addEventListener("submit",e=>{e.preventDefault();const id=document.getElementById("habitId").value;const obj={id:id||uid("habit"),name:document.getElementById("habitName").value.trim(),goal:document.getElementById("habitGoal").value.trim()||"Daily",frequency:"daily",active:document.getElementById("habitActive").value==="true"};if(!obj.name)return;if(id)state.habits=state.habits.map(x=>x.id===id?obj:x);else state.habits.push(obj);save();closeModal("habitModal");toast("Habit saved.");renderAll();});
+document.getElementById("deleteHabitBtn").addEventListener("click",()=>{const id=document.getElementById("habitId").value;if(confirm("Delete this habit and its completion history?")){state.habits=state.habits.filter(h=>h.id!==id);Object.keys(state.completions).filter(k=>k.endsWith("|"+id)).forEach(k=>delete state.completions[k]);save();closeModal("habitModal");renderAll();}});
+
+document.getElementById("focusDate").addEventListener("change",e=>{focusDate=e.target.value||isoToday();weekAnchor=parseDate(focusDate);monthAnchor=new Date(parseDate(focusDate).getFullYear(),parseDate(focusDate).getMonth(),1);renderToday();});
+document.getElementById("todayBtn").addEventListener("click",()=>{focusDate=isoToday();weekAnchor=parseDate(focusDate);monthAnchor=new Date(parseDate(focusDate).getFullYear(),parseDate(focusDate).getMonth(),1);switchView("today");});
+["addEventTop","addEventToday","addEventAssignments"].forEach(id=>document.getElementById(id).addEventListener("click",()=>openEvent()));
+["addHabitToday","addHabitManager"].forEach(id=>document.getElementById(id).addEventListener("click",()=>openHabit()));
+document.getElementById("prevWeek").addEventListener("click",()=>{weekAnchor.setDate(weekAnchor.getDate()-7);renderWeek();});
+document.getElementById("nextWeek").addEventListener("click",()=>{weekAnchor.setDate(weekAnchor.getDate()+7);renderWeek();});
+document.getElementById("prevMonth").addEventListener("click",()=>{monthAnchor.setMonth(monthAnchor.getMonth()-1);renderMonth();});
+document.getElementById("nextMonth").addEventListener("click",()=>{monthAnchor.setMonth(monthAnchor.getMonth()+1);renderMonth();});
+["searchAssignments","filterCourse","filterType","filterStatus","filterWhen"].forEach(id=>document.getElementById(id).addEventListener(id==="searchAssignments"?"input":"change",renderAssignments));
+
+document.getElementById("alertDays").value=String(state.settings.alertDays||7);
+document.getElementById("alertDays").addEventListener("change",e=>{state.settings.alertDays=Number(e.target.value);save();renderToday();});
+document.getElementById("notifyBtn").addEventListener("click",async()=>{if(!("Notification" in window))return toast("Browser notifications are not supported here.");try{const p=await Notification.requestPermission();if(p==="granted"){toast("Notifications enabled.");checkNotification();}else toast("Notification permission was not granted.");}catch(e){toast("Notifications require the app to be served from a secure site.");}});
+function checkNotification(){
+  if(!("Notification" in window)||Notification.permission!=="granted")return;const days=Number(state.settings.alertDays||7);const exam=upcomingExams(isoToday()).find(e=>diffDays(e.date,isoToday())<=days);if(exam){const marker="notified-"+exam.id+"-"+isoToday();if(!sessionStorage.getItem(marker)){new Notification(`Exam in ${diffDays(exam.date,isoToday())} day(s)`,{body:`${exam.course} — ${exam.title} (${fmtDate(exam.date)})`});sessionStorage.setItem(marker,"1");}}
+}
+
+document.getElementById("exportBtn").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="daily-command-center-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+document.getElementById("importFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.events)||!Array.isArray(x.habits))throw new Error();state={...defaultState(),...x};save();toast("Backup imported.");renderAll();}catch(err){toast("That file is not a valid planner backup.");}e.target.value="";});
+document.getElementById("resetBtn").addEventListener("click",()=>{if(confirm("Reset all edits, habits, and completion history to the original tracker data?")){state=defaultState();save();document.getElementById("alertDays").value=String(state.settings.alertDays);renderAll();toast("Reset complete.");}});
+
+function renderAll(){renderToday();renderWeek();renderMonth();renderAssignments();renderExams();renderHabitManager();}
+renderAll();checkNotification();
+
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const b = document.getElementById("installAppBtn");
+  if (b) b.style.display = "inline-block";
+});
+const installBtn = document.getElementById("installAppBtn");
+if (installBtn) installBtn.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    toast("Use your browser menu to add this app to the Home Screen.");
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  try { await deferredInstallPrompt.userChoice; } catch (_) {}
+  deferredInstallPrompt = null;
+  installBtn.style.display = "none";
+});
+window.addEventListener("appinstalled", () => toast("Daily Command Center installed."));
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
+</script>
+</body>
+</html>
